@@ -1,14 +1,11 @@
 package org.engteachbot.telegram;
 
 import org.engteachbot.model.WordInfo;
-import org.engteachbot.service.TranslationService;
-import org.engteachbot.service.WordOfTheDayService;
+import org.engteachbot.service.GigaChatTranslationService;
+import org.engteachbot.service.GigaChatWordOfTheDayService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
-import org.telegram.telegrambots.longpolling.BotSession;
 import org.telegram.telegrambots.longpolling.interfaces.LongPollingUpdateConsumer;
-import org.telegram.telegrambots.longpolling.starter.AfterBotRegistration;
 import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -23,11 +20,11 @@ public class Bot implements SpringLongPollingBot, LongPollingSingleThreadUpdateC
 
     private final TelegramClient telegramClient;
     private final String token;
-    private final TranslationService translationService;
-    private final WordOfTheDayService wordOfTheDayService;
+    private final GigaChatTranslationService translationService;
+    private final GigaChatWordOfTheDayService wordOfTheDayService;
 
     @Autowired
-    public Bot(TranslationService translationService, WordOfTheDayService wordOfTheDayService, TelegramClient telegramClient) {
+    public Bot(GigaChatTranslationService translationService, GigaChatWordOfTheDayService wordOfTheDayService, TelegramClient telegramClient) {
         this.translationService = translationService;
         this.wordOfTheDayService = wordOfTheDayService;
         this.telegramClient = telegramClient;
@@ -56,11 +53,7 @@ public class Bot implements SpringLongPollingBot, LongPollingSingleThreadUpdateC
                 String text = message.getText().trim();
 
                 if (text.equals("/start")) {
-                    sendMessage(chatId, "Привет! Я бот для изучения английского. Напиши 'Переведи'  для перевода.");
-                } else if (text.equals("/word")) {
-                    String[] words = {"apple - яблоко", "car - машина", "house - дом", "dog - собака"};
-                    String randomWord = words[(int) (Math.random() * words.length)];
-                    sendMessage(chatId, randomWord);
+                    sendMessage(chatId, "Привет! Я бот для изучения английского. Напиши 'слово дня' или 'Переведи <слово>'");
                 } else if (text.equals("слово дня")) {
                     sendWordOfTheDay(chatId);
                 } else if (text.startsWith("Переведи ")) {
@@ -76,6 +69,7 @@ public class Bot implements SpringLongPollingBot, LongPollingSingleThreadUpdateC
 
     private void sendWordOfTheDay(String chatId) {
         WordInfo wordInfo = wordOfTheDayService.getWordOfTheDay();
+        System.out.println("WordInfo: " + wordInfo);
 
         if (wordInfo != null) {
             String message = String.format(
@@ -96,7 +90,7 @@ public class Bot implements SpringLongPollingBot, LongPollingSingleThreadUpdateC
             );
             sendMessage(chatId, message);
         } else {
-            sendMessage(chatId, "Не удалось получить информацию о слове. Пожалуйста, попробуйте позже.");
+            sendMessage(chatId, "Не удалось получить слово дня. Попробуйте позже.");
         }
     }
 
@@ -104,13 +98,10 @@ public class Bot implements SpringLongPollingBot, LongPollingSingleThreadUpdateC
         SendMessage message = new SendMessage(chatId, text);
         try {
             telegramClient.execute(message);
+            System.out.println("Sent to Telegram: " + text);
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
     }
-
-    @AfterBotRegistration
-    public void afterRegistration(BotSession botSession) {
-        System.out.println("Registered bot running state is: " + botSession.isRunning());
-    }
 }
+
