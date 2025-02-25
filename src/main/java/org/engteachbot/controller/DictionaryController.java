@@ -1,6 +1,6 @@
 package org.engteachbot.controller;
 
-import org.engteachbot.service.GigaChatTranslationService;
+import org.engteachbot.service.translate.GigaChatTranslationService;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 

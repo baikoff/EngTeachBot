@@ -9,10 +9,9 @@ import lombok.*;
 @AllArgsConstructor
 public class WordInfo {
     private String word;
-    private String phonetic;
-    private String definition;
-    private String example;
     private String translatedWord;
-    private String translatedDefinition;
+    private String phonetic;
+    private String example;
     private String translatedExample;
+
 }

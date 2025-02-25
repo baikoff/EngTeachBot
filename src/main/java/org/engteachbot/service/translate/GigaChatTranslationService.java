@@ -1,5 +1,6 @@
-package org.engteachbot.service;
+package org.engteachbot.service.translate;
 
+import org.engteachbot.service.GigaChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
