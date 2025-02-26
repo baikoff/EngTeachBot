@@ -1,6 +1,7 @@
 package org.engteachbot.telegram;
 
 import jakarta.transaction.Transactional;
+import org.engteachbot.model.LearnedWord;
 import org.engteachbot.model.StoryState;
 import org.engteachbot.model.WordInfo;
 import org.engteachbot.reposiroty.StoryStateRepository;
@@ -18,7 +19,11 @@ import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Component
 public class Bot implements SpringLongPollingBot, LongPollingSingleThreadUpdateConsumer {
@@ -51,7 +56,6 @@ public class Bot implements SpringLongPollingBot, LongPollingSingleThreadUpdateC
         return this;
     }
 
-    @Transactional
     @Override
     public void consume(Update update) {
         if (update.hasMessage()) {
@@ -63,7 +67,7 @@ public class Bot implements SpringLongPollingBot, LongPollingSingleThreadUpdateC
                 System.out.println("Received message: " + text + " from chatId: " + chatId);
 
                 if (text.equals("/start")) {
-                    sendMessage(chatId, "Привет! Я бот для изучения IT-английского. Напиши '/story' или 'Переведи <текст>'!");
+                    sendMessage(chatId, "Привет! Я бот для изучения IT-английского. Напиши '/story', 'Переведи <текст>' или '/words'!");
                 } else if (text.equals("/story")) {
                     System.out.println("Processing /story for chatId: " + chatIdLong);
                     StoryState state = storyStateRepository.findById(chatIdLong).orElse(new StoryState());
@@ -72,11 +76,7 @@ public class Bot implements SpringLongPollingBot, LongPollingSingleThreadUpdateC
                         state.setChatId(chatIdLong);
                         StoryResponse storyResponse = storyService.startStory();
                         state.setCurrentScene(storyResponse.getSceneText());
-                        storyResponse.getWords().forEach(word -> {
-                            if (!state.getLearnedWords().contains(word.getWord())) {
-                                state.getLearnedWords().add(word.getWord());
-                            }
-                        });
+                        storyResponse.getWords().forEach(word -> state.addWord(word.getWord(), word.getTranslatedWord(), word.getPhonetic()));
                         storyStateRepository.save(state);
                         sendMessage(chatId, formatStoryMessage(storyResponse));
                     } else {
@@ -89,20 +89,33 @@ public class Bot implements SpringLongPollingBot, LongPollingSingleThreadUpdateC
                     String targetLang = sourceLang.equals("ru") ? "en" : "ru";
                     String translatedText = translationService.translate(wordToTranslate, sourceLang, targetLang);
                     sendMessage(chatId, translatedText);
+                } else if (text.equals("/words")) {
+                    StoryState state = storyStateRepository.findById(chatIdLong).orElse(null);
+                    if (state == null) {
+                        sendMessage(chatId, "Ты еще не начал историю, используй /story!");
+                    } else if (state.getLearnedWords().isEmpty()) {
+                        sendMessage(chatId, "Ты еще не выучил ни одного слова!");
+                    } else {
+                        AtomicInteger counter = new AtomicInteger(1);
+                        String wordsList = state.getLearnedWords().stream()
+                                .sorted(Comparator.comparing(LearnedWord::getWord, String.CASE_INSENSITIVE_ORDER))
+                                .map(word -> counter.getAndIncrement() + ". " + word.getWord() + " - " +
+                                        word.getIpa() + " - " + word.getTranslation())
+                                .collect(Collectors.joining("\n"));
+                        int wordCount = state.getLearnedWords().size();
+                        String messageAboutWords = String.format("Learned words (%d):\n%s", wordCount, wordsList);
+                        sendMessage(chatId, messageAboutWords);
+                    }
                 } else if (storyStateRepository.existsById(chatIdLong)) {
                     System.out.println("Continuing story with input: " + text);
                     StoryState state = storyStateRepository.findById(chatIdLong).get();
                     StoryResponse storyResponse = storyService.continueStory(state.getCurrentScene(), text);
                     state.setCurrentScene(storyResponse.getSceneText());
-                    storyResponse.getWords().forEach(word -> {
-                        if (!state.getLearnedWords().contains(word.getWord())) {
-                            state.getLearnedWords().add(word.getWord());
-                        }
-                    });
+                    storyResponse.getWords().forEach(word -> state.addWord(word.getWord(), word.getTranslatedWord(), word.getPhonetic()));
                     storyStateRepository.save(state);
                     sendMessage(chatId, formatStoryMessage(storyResponse));
                 } else {
-                    sendMessage(chatId, "Я не понял команду. Используй '/story' или 'Переведи <текст>'!");
+                    sendMessage(chatId, "Я не понял команду. Используй '/story', 'Переведи <текст>' или '/words'!");
                 }
             }
         }

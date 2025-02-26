@@ -8,8 +8,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Component
 public class StoryResponseParser {
@@ -28,16 +26,7 @@ public class StoryResponseParser {
         }
 
         try {
-            // Убираем возможные лишние символы и парсим как JSONArray
-            String cleanedResponse = wordsResponse.trim();
-            if (!cleanedResponse.startsWith("[")) {
-                cleanedResponse = cleanedResponse.substring(cleanedResponse.indexOf("["));
-            }
-            if (!cleanedResponse.endsWith("]")) {
-                cleanedResponse = cleanedResponse.substring(0, cleanedResponse.lastIndexOf("]") + 1);
-            }
-
-            JSONArray jsonArray = new JSONArray(cleanedResponse);
+            JSONArray jsonArray = getObjects(wordsResponse);
             for (int i = 0; i < jsonArray.length(); i++) {
                 JSONObject jsonWord = jsonArray.getJSONObject(i);
                 String word = jsonWord.getString("word");
@@ -59,5 +48,21 @@ public class StoryResponseParser {
         }
 
         return words;
+    }
+
+    private static JSONArray getObjects(String wordsResponse) {
+        String cleanedResponse = wordsResponse.trim()
+                .replace("```json", "")
+                .replace("```", "")
+                .trim();
+
+        JSONArray jsonArray;
+        if (cleanedResponse.startsWith("{")) {
+            JSONObject jsonObject = new JSONObject(cleanedResponse);
+            jsonArray = jsonObject.getJSONArray("words");
+        } else {
+            jsonArray = new JSONArray(cleanedResponse);
+        }
+        return jsonArray;
     }
 }
