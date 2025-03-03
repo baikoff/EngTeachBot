@@ -13,7 +13,9 @@ import java.util.UUID;
 public class GigaChatAuthService {
 
     private static final String AUTH_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth";
+
     private final RestTemplate restTemplate;
+
     private final String authKey;
 
     public GigaChatAuthService(RestTemplate restTemplate) {

@@ -13,6 +13,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StoryResponse {
+
     private String sceneText;
+
     private List<WordInfo> words;
+
 }

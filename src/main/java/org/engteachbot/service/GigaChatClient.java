@@ -10,7 +10,9 @@ import org.springframework.web.client.RestTemplate;
 public class GigaChatClient {
 
     private static final String GIGA_CHAT_API_URL = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions";
+
     private final RestTemplate restTemplate;
+
     private final GigaChatAuthService authService;
 
     public GigaChatClient(RestTemplate restTemplate, GigaChatAuthService authService) {

@@ -1,20 +1,16 @@
 package org.engteachbot.service.story;
 
-import org.engteachbot.model.WordInfo;
 import org.engteachbot.parser.StoryResponseParser;
 import org.engteachbot.response.StoryResponse;
 import org.engteachbot.service.GigaChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 @Service
 public class ITStoryServiceImpl implements ITStoryService {
+
     private final GigaChatClient gigaChatClient;
+
     private final StoryResponseParser parser;
 
     @Autowired
